@@ -19,6 +19,13 @@ if (!string.IsNullOrEmpty(xaiApiKey))
     builder.Configuration["Grok:ApiKey"] = xaiApiKey;
 }
 
+// OpenAI fallback provider (used when Grok fails - see ChatService).
+var openAiApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+if (!string.IsNullOrEmpty(openAiApiKey))
+{
+    builder.Configuration["OpenAi:ApiKey"] = openAiApiKey;
+}
+
 var qdrantUrl = Environment.GetEnvironmentVariable("QDRANT_URL");
 if (!string.IsNullOrEmpty(qdrantUrl))
 {
@@ -26,6 +33,7 @@ if (!string.IsNullOrEmpty(qdrantUrl))
 }
 
 builder.Services.Configure<GrokOptions>(builder.Configuration.GetSection(GrokOptions.SectionName));
+builder.Services.Configure<OpenAiOptions>(builder.Configuration.GetSection(OpenAiOptions.SectionName));
 builder.Services.Configure<QdrantOptions>(builder.Configuration.GetSection(QdrantOptions.SectionName));
 builder.Services.Configure<PortfolioDataOptions>(builder.Configuration.GetSection(PortfolioDataOptions.SectionName));
 
@@ -100,6 +108,7 @@ builder.Services.AddSingleton<IEmbeddingService, EmbeddingService>();
 builder.Services.AddSingleton<IRagService, RagService>();
 builder.Services.AddSingleton<IPromptService, PromptService>();
 builder.Services.AddSingleton<IGrokClient, GrokClient>();
+builder.Services.AddSingleton<IOpenAiClient, OpenAiClient>();
 builder.Services.AddScoped<IChatService, ChatService>();
 
 // RAG pipeline building blocks

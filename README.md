@@ -8,23 +8,30 @@ skills, experience and projects.
 ## Status
 
 This repo is currently **scaffolded** (Phase 1/2/4 of the plan below) — the portfolio UI,
-the .NET API shell, MCP tools (reading JSON), the real Grok API call, and Docker/Compose
-setup all work end-to-end. RAG (Qdrant ingestion + search) is still stubbed with clear
-`NotImplementedException`s / TODO comments. `POST /api/chat` calls Grok for real and falls
-back to a placeholder answer (built from whatever MCP tool data matches the question) if the
-Grok call fails for any reason — no API key configured, no account credits, network error,
-etc. — so the endpoint and UI stay testable no matter what state the Grok account is in.
+the .NET API shell, MCP tools (reading JSON), the real Grok + OpenAI API calls, and
+Docker/Compose setup all work end-to-end. RAG (Qdrant ingestion + search) is still stubbed
+with clear `NotImplementedException`s / TODO comments. `POST /api/chat` tries Grok first
+(the project's documented/primary LLM), falls back to OpenAI if Grok fails, and only falls
+back further to a placeholder answer (built from whatever MCP tool data matches the
+question) if *both* LLM calls fail — so the endpoint and UI stay testable no matter what
+state either account is in, and it starts giving real answers the instant either one has
+credits, no code changes needed.
 
-**Grok is wired up but the xAI account has no credits yet** (confirmed via repeated live API
-calls — auth succeeds, `403 permission-denied` with "doesn't have any credits or licenses
-yet"). Add credits at the URL in that error / on [console.x.ai](https://console.x.ai), and
-answers will start coming from Grok immediately — no code changes needed.
-`GrokClient` calls xAI's **Responses API** (`POST /v1/responses`, an `input` array rather than
-the older `messages` chat/completions shape), model `grok-4.6` — both confirmed against a
-real xAI-documented example, reaching the endpoint (403 billing-gate, not 404/format-rejected).
-The success-response parsing in `GrokClient.ExtractOutputText` is written defensively against
-the documented convention but hasn't been exercised against a real 200 yet — worth a quick
-sanity check the first time credits land.
+**Neither account has usable credits yet** (confirmed via repeated live API calls):
+
+- **Grok**: auth succeeds; `403` — first seen as "doesn't have any credits or licenses yet",
+  now "used all available credits or reached its monthly spending limit" (worth checking
+  [console.x.ai](https://console.x.ai) if that shift is unexpected). `GrokClient` calls xAI's
+  **Responses API** (`POST /v1/responses`, an `input` array, not the older `messages`
+  chat/completions shape), model `grok-4.6` — both confirmed against a real xAI-documented
+  example, reaching the endpoint (403 billing-gate, not 404/format-rejected). The
+  success-response parsing in `GrokClient.ExtractOutputText` is written defensively against
+  the documented convention but hasn't been exercised against a real 200 yet.
+- **OpenAI** (fallback): key is valid and the request format is confirmed correct — `429
+  insufficient_quota` (not 401), meaning auth passed and it's purely a billing gate. Calls
+  the standard Chat Completions API (`POST /v1/chat/completions`), model `gpt-4o-mini`.
+
+Add credits to either at [console.x.ai](https://console.x.ai) / [platform.openai.com/account/billing](https://platform.openai.com/account/billing).
 
 Real content is in (`data/profile.json`, `skills.json`, `projects.json`, `experience.json`,
 `data/resume.pdf`) — see [data/README.md](data/README.md) for two details worth double
@@ -80,7 +87,8 @@ This starts `portfolio-web` (3000), `portfolio-api` (8080) and `qdrant` (6333), 
 
 | Variable              | Where                 | Purpose                                  |
 | ---------------------- | --------------------- | ----------------------------------------- |
-| `XAI_API_KEY`           | backend                | Grok (xAI) API key — never expose to the frontend |
+| `XAI_API_KEY`           | backend                | Grok (xAI) API key, primary LLM — never expose to the frontend |
+| `OPENAI_API_KEY`        | backend                | OpenAI API key, fallback LLM used automatically if Grok fails — never expose to the frontend |
 | `QDRANT_URL`            | backend                | Qdrant endpoint (defaults to `http://localhost:6333` / `http://qdrant:6333` in Compose) |
 | `NEXT_PUBLIC_API_URL`   | frontend, build-time   | Base URL the **browser** uses to call the API |
 | `API_INTERNAL_URL`      | frontend, runtime      | Base URL **Server Components** use to call the API — must be the Docker-internal address (`http://portfolio-api:8080` in Compose), since `localhost` inside the web container doesn't reach the API container |
@@ -95,8 +103,10 @@ This starts `portfolio-web` (3000), `portfolio-api` (8080) and `qdrant` (6333), 
 1. **RAG** — implement `ResumeLoader` (PDF text extraction), wire `EmbeddingService` to a
    real embeddings endpoint, implement `VectorStore` against Qdrant, fill in `RagService`.
    `data/resume.pdf` is in place (see its caveat in [data/README.md](data/README.md)).
-2. ~~**Grok** — implement `GrokClient.CompleteAsync`.~~ Done — calls
-   `POST /v1/chat/completions`; blocked only on the xAI account having credits (see Status).
+2. ~~**Grok** — implement `GrokClient.CompleteAsync`.~~ Done — calls `POST /v1/responses`;
+   blocked only on the xAI account having credits (see Status). An OpenAI fallback
+   (`OpenAiClient`) is also wired in and equally blocked on credits, both automatically —
+   `ChatService` tries Grok, then OpenAI, then the placeholder.
 3. **MCP protocol** — expose `PortfolioMcpServer`'s tools over an actual MCP transport
    (currently called in-process only).
 4. **Orchestration** — replace the keyword heuristic in `ChatService.SelectRelevantTools`
