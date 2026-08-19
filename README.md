@@ -1,5 +1,7 @@
 # AI-Powered Portfolio Assistant
 
+[![CI/CD](https://github.com/imdhanifa/ai-portfolio-assistant/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/imdhanifa/ai-portfolio-assistant/actions/workflows/ci-cd.yml)
+
 A personal portfolio built with Next.js and .NET 10, with a floating AI assistant powered by
 Grok (xAI). The assistant uses Retrieval-Augmented Generation (RAG) over a resume PDF and
 Model Context Protocol (MCP) tools over structured JSON data to answer questions about
@@ -97,6 +99,34 @@ This starts `portfolio-web` (3000), `portfolio-api` (8080) and `qdrant` (6333), 
 
 - **Postman collection**: [postman/Portfolio-Api.postman_collection.json](postman/Portfolio-Api.postman_collection.json) — health, all four `GET /api/*` endpoints, and a few `POST /api/chat` examples (including a 400-validation case). Import it, set the `baseUrl` variable (`http://localhost:5290` for `dotnet run`, `http://localhost:8080` for Compose), and go. Verified with `newman run` against the live containers — all 9 requests pass.
 - **Interactive OpenAPI docs (Scalar)**: run the API in `Development` and open `{{baseUrl}}/scalar/v1` (backed by the raw spec at `/openapi/v1.json`). Not exposed in Production.
+
+## CI/CD
+
+[`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml) runs on every push/PR to `main`:
+
+1. **backend** — `dotnet build` (Release).
+2. **frontend** — `eslint` + `next build`.
+3. **docker-build** — builds both Dockerfiles (build-only, no push), catching Dockerfile
+   issues plain builds wouldn't.
+4. **e2e-smoke** — the real test: `docker compose up --build` with no API keys configured
+   (exercising the same Grok → OpenAI → placeholder fallback chain described above),
+   waits for both services to be healthy, runs the full [Postman collection](postman/Portfolio-Api.postman_collection.json)
+   via `newman`, and checks the homepage actually server-rendered real profile data (the
+   exact class of bug caught manually earlier — see the "Fix portfolio-web unable to reach
+   portfolio-api in Docker" commit).
+5. **deploy** — only on a push to `main`, only after every job above passes. Triggers a
+   Coolify deploy webhook if `COOLIFY_WEBHOOK_URL` (+ optional `COOLIFY_API_TOKEN`) is set
+   as a repo secret; otherwise it logs why it skipped and exits cleanly rather than failing.
+
+**Two ways to wire up actual deployment** (pick one):
+
+- **Simplest — Coolify's native GitHub integration**: connect this repo directly in
+  Coolify's dashboard. Coolify then polls/webhooks on push and redeploys on its own,
+  matching the spec's `Git Push → GitHub → Coolify → Docker Build → Deployment` flow — no
+  GitHub secret needed, but it redeploys on every push regardless of whether checks passed.
+- **Gated — the `deploy` job above**: add `COOLIFY_WEBHOOK_URL` (from the app's Settings →
+  Webhooks in Coolify) as a GitHub Actions secret (Settings → Secrets and variables →
+  Actions). Deploys only fire after CI/build/smoke-test all pass.
 
 ## Next steps (Phases 3, 5-9)
 
