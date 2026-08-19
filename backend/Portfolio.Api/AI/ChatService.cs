@@ -5,10 +5,10 @@ namespace Portfolio.Api.AI;
 
 /// <summary>
 /// Chat orchestrator. Wires RAG + MCP + prompt building + Grok together per the "AI
-/// Decision Flow" (spec section 16). RAG and Grok are still stubs (Phases 3 and 4), so
-/// this currently falls back to a placeholder answer built from whatever MCP tool data
-/// it can gather, rather than failing outright — keeps POST /api/chat testable end-to-end
-/// during scaffolding.
+/// Decision Flow" (spec section 16). RAG is still a stub (Phase 3), and any Grok failure
+/// (not configured, no API credits, network error, etc.) falls back to a placeholder
+/// answer built from whatever MCP tool data it can gather — keeps POST /api/chat resilient
+/// and testable even when the upstream LLM call can't complete.
 /// </summary>
 public class ChatService(
     IRagService ragService,
@@ -48,9 +48,9 @@ public class ChatService(
             var answer = await grokClient.CompleteAsync(systemPrompt, userPrompt, cancellationToken);
             return new ChatResponse { Answer = answer, Sources = sources };
         }
-        catch (NotImplementedException)
+        catch (Exception ex) when (ex is NotImplementedException or GrokApiException)
         {
-            logger.LogInformation("Grok is not wired up yet; returning a placeholder chat response.");
+            logger.LogWarning(ex, "Grok call failed or is not wired up; returning a placeholder chat response.");
             return BuildPlaceholderResponse(mcpResults, sources);
         }
     }
@@ -69,8 +69,8 @@ public class ChatService(
     private static ChatResponse BuildPlaceholderResponse(Dictionary<string, string> mcpResults, List<string> sources)
     {
         var answer = mcpResults.Count > 0
-            ? $"(Placeholder — Grok integration lands in Phase 4.) Found structured data from: {string.Join(", ", mcpResults.Keys)}."
-            : "(Placeholder — Grok integration lands in Phase 4, RAG in Phase 3.) No matching structured data or resume context found yet.";
+            ? $"(The AI assistant is temporarily unavailable — check server logs for the Grok API error.) Found structured data from: {string.Join(", ", mcpResults.Keys)}."
+            : "(The AI assistant is temporarily unavailable — check server logs for the Grok API error.) No matching structured data or resume context found either.";
 
         return new ChatResponse { Answer = answer, Sources = sources };
     }

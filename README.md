@@ -7,12 +7,20 @@ skills, experience and projects.
 
 ## Status
 
-This repo is currently **scaffolded** (Phase 1/2 of the plan below) — the portfolio UI, the
-.NET API shell, MCP tools (reading JSON) and Docker/Compose setup all work end-to-end. RAG
-(Qdrant ingestion + search) and the actual Grok API call are stubbed with clear
-`NotImplementedException`s / TODO comments and come next. Until then, `POST /api/chat` still
-responds — it returns a placeholder answer built from whatever MCP tool data matches the
-question, so the endpoint and UI are testable before Grok is wired up.
+This repo is currently **scaffolded** (Phase 1/2/4 of the plan below) — the portfolio UI,
+the .NET API shell, MCP tools (reading JSON), the real Grok API call, and Docker/Compose
+setup all work end-to-end. RAG (Qdrant ingestion + search) is still stubbed with clear
+`NotImplementedException`s / TODO comments. `POST /api/chat` calls Grok for real and falls
+back to a placeholder answer (built from whatever MCP tool data matches the question) if the
+Grok call fails for any reason — no API key configured, no account credits, network error,
+etc. — so the endpoint and UI stay testable no matter what state the Grok account is in.
+
+**Grok is wired up but the xAI account has no credits yet** (confirmed via a live API call —
+auth succeeds, `403 permission-denied` with "doesn't have any credits or licenses yet").
+Add credits at the URL in that error / on [console.x.ai](https://console.x.ai), and answers will start
+coming from Grok immediately — no code changes needed. Also double check
+`Grok:Model` in [appsettings.json](backend/Portfolio.Api/appsettings.json) (currently
+`grok-4-fast`, an unverified guess) against `GET /v1/models` once the account can call it.
 
 Real content (`data/profile.json`, `skills.json`, `projects.json`, `experience.json`,
 `data/resume.pdf`) is still placeholder — see [data/README.md](data/README.md).
@@ -67,11 +75,13 @@ This starts `portfolio-web` (3000), `portfolio-api` (8080) and `qdrant` (6333), 
 | `QDRANT_URL`          | backend             | Qdrant endpoint (defaults to `http://localhost:6333` / `http://qdrant:6333` in Compose) |
 | `NEXT_PUBLIC_API_URL` | frontend, build-time | Base URL the browser uses to call the API |
 
-## Next steps (Phases 3-9)
+## Next steps (Phases 3, 5-9)
 
 1. **RAG** — implement `ResumeLoader` (PDF text extraction), wire `EmbeddingService` to a
    real embeddings endpoint, implement `VectorStore` against Qdrant, fill in `RagService`.
-2. **Grok** — implement `GrokClient.CompleteAsync` against `POST /v1/chat/completions`.
+   Needs `data/resume.pdf`.
+2. ~~**Grok** — implement `GrokClient.CompleteAsync`.~~ Done — calls
+   `POST /v1/chat/completions`; blocked only on the xAI account having credits (see Status).
 3. **MCP protocol** — expose `PortfolioMcpServer`'s tools over an actual MCP transport
    (currently called in-process only).
 4. **Orchestration** — replace the keyword heuristic in `ChatService.SelectRelevantTools`

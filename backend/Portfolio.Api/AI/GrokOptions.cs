@@ -10,6 +10,11 @@ public class GrokOptions
 
     public string BaseUrl { get; set; } = "https://api.x.ai/v1";
 
-    /// <summary>TODO: set to the current xAI model id (check https://docs.x.ai for the latest name).</summary>
-    public string Model { get; set; } = "grok-beta";
+    /// <summary>
+    /// TODO: confirm against GET https://api.x.ai/v1/models (requires an account with
+    /// credits) or https://docs.x.ai/docs/models, then override via appsettings/env if
+    /// this default is stale. "grok-beta" is retired; "grok-4-fast" is this scaffold's
+    /// best-effort guess as of 2026-08 and has NOT been verified against a live account.
+    /// </summary>
+    public string Model { get; set; } = "grok-4-fast";
 }
