@@ -1,0 +1,7 @@
+{
+  "backend": ["TODO: e.g. .NET 10", "TODO: e.g. ASP.NET Core"],
+  "frontend": ["TODO: e.g. Next.js", "TODO: e.g. React"],
+  "database": ["TODO: e.g. SQL Server"],
+  "ai": ["TODO: e.g. RAG", "TODO: e.g. MCP"],
+  "devops": ["TODO: e.g. Docker", "TODO: e.g. Coolify"]
+}

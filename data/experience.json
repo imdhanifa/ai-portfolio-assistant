@@ -1,0 +1,10 @@
+[
+  {
+    "company": "TODO: Company Name",
+    "role": "TODO: Job Title",
+    "startDate": "TODO: YYYY-MM",
+    "endDate": "TODO: YYYY-MM or Present",
+    "description": "TODO: What you did and impact you had.",
+    "technologies": ["TODO: Tech1", "TODO: Tech2"]
+  }
+]

@@ -1,0 +1,37 @@
+services:
+  portfolio-web:
+    build:
+      context: ./frontend/portfolio-web
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - portfolio-api
+    restart: unless-stopped
+
+  portfolio-api:
+    build:
+      context: ./backend/Portfolio.Api
+    ports:
+      - "8080:8080"
+    environment:
+      XAI_API_KEY: ${XAI_API_KEY}
+      QDRANT_URL: http://qdrant:6333
+      PortfolioData__DataDirectory: /data
+    volumes:
+      - ./data:/data:ro
+    depends_on:
+      - qdrant
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    restart: unless-stopped
+
+volumes:
+  qdrant-data:

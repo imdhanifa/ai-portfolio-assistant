@@ -1,0 +1,29 @@
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Node / Next.js
+frontend/portfolio-web/node_modules/
+frontend/portfolio-web/.next/
+frontend/portfolio-web/.next-profiles/
+frontend/portfolio-web/next-env.d.ts
+frontend/portfolio-web/*.tsbuildinfo
+frontend/portfolio-web/npm-debug.log*
+
+# .NET
+backend/Portfolio.Api/bin/
+backend/Portfolio.Api/obj/
+backend/**/bin/
+backend/**/obj/
+*.user
+
+# Editors / OS
+.vs/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
