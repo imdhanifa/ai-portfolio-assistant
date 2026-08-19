@@ -3,7 +3,14 @@ services:
     build:
       context: ./frontend/portfolio-web
       args:
+        # Baked into the browser bundle at build time - must be the URL the browser
+        # (on the host / internet) can reach, never a Docker-internal hostname.
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+    environment:
+      # Runtime-only (no NEXT_PUBLIC_ prefix, so never sent to the browser). Lets
+      # Server Components fetch the API over the Docker network by service name,
+      # since "localhost:8080" inside this container doesn't reach portfolio-api.
+      API_INTERNAL_URL: http://portfolio-api:8080
     ports:
       - "3000:3000"
     depends_on:
