@@ -1,7 +1,28 @@
 {
-  "backend": ["TODO: e.g. .NET 10", "TODO: e.g. ASP.NET Core"],
-  "frontend": ["TODO: e.g. Next.js", "TODO: e.g. React"],
-  "database": ["TODO: e.g. SQL Server"],
-  "ai": ["TODO: e.g. RAG", "TODO: e.g. MCP"],
-  "devops": ["TODO: e.g. Docker", "TODO: e.g. Coolify"]
+  "languages": ["C#", "TypeScript", "JavaScript", "SQL", "HTML5", "CSS3", "SCSS"],
+  "backend": [
+    ".NET 8",
+    "ASP.NET Core",
+    "RESTful APIs",
+    "GraphQL",
+    "EF Core",
+    "Dapper",
+    "ADO.NET",
+    "ORM",
+    "Minimal APIs (FastEndpoints)"
+  ],
+  "frontend": ["Angular", "React.js", "Bootstrap", "Responsive UI/UX", "UI Theming (Light/Dark/Multicolor)"],
+  "database": ["SQL Server", "MySQL", "PostgreSQL", "Stored Procedures", "Query Optimization"],
+  "architecture": [
+    "Microservices",
+    "Monolithic",
+    "MVC",
+    "Layered Architecture",
+    "CQRS",
+    "Clean Architecture",
+    "Micro Frontends (Module Federation)"
+  ],
+  "devops": ["Azure DevOps", "Jira", "Git", "GitHub", "BitBucket", "TFS", "Docker (basics)"],
+  "ai": ["Model Context Protocol (MCP) - basics"],
+  "tools": ["Visual Studio 2022", "VS Code", "SSMS", "Postman"]
 }

@@ -1,9 +1,12 @@
 const CATEGORY_LABELS = {
+  languages: "Languages",
   backend: "Backend",
   frontend: "Frontend",
   database: "Database",
+  architecture: "Architecture & Patterns",
   ai: "AI",
-  devops: "DevOps",
+  devops: "DevOps & Cloud",
+  tools: "Tools & IDEs",
 };
 
 export default function Skills({ skills }) {
