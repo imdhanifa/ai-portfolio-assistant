@@ -1,16 +1,22 @@
+import { Sparkles } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import ChatPanel from "@/components/ChatPanel";
 
-export const metadata = { title: "AI Assistant | Portfolio" };
+export const metadata = {
+  title: "AI Assistant",
+  description:
+    "Ask the AI portfolio assistant about skills, experience or projects — grounded in the resume via RAG and structured data via MCP.",
+};
 
 export default function ChatPage() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col px-6 py-16">
-      <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-50">AI Assistant</h1>
-      <p className="mt-3 text-zinc-600 dark:text-zinc-400">
-        Ask about skills, experience or projects — answers are grounded in the resume (RAG)
-        and structured portfolio data (MCP).
-      </p>
-      <div className="mt-8 h-[36rem] overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800">
+      <PageHeader
+        icon={Sparkles}
+        title="AI Assistant"
+        subtitle="Ask about skills, experience or projects — answers are grounded in the resume (RAG) and structured portfolio data (MCP)."
+      />
+      <div className="h-144 overflow-hidden rounded-2xl border border-zinc-200 shadow-lg shadow-indigo-500/5 dark:border-zinc-800">
         <ChatPanel />
       </div>
     </div>

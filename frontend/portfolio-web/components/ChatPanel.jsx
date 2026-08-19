@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
+import { Sparkles, Send, Trash2 } from "lucide-react";
 import { sendChatMessage } from "@/lib/api";
 
 const SUGGESTED_QUESTIONS = [
@@ -61,17 +62,19 @@ export default function ChatPanel() {
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
-        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-          🤖 AI Portfolio Assistant
+    <div className="flex h-full flex-col bg-white dark:bg-zinc-950">
+      <div className="flex items-center justify-between bg-linear-to-r from-indigo-500 to-purple-500 px-4 py-3 text-white">
+        <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+          <Sparkles size={15} />
+          AI Portfolio Assistant
         </h2>
         <button
           type="button"
           onClick={handleClear}
-          className="text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+          aria-label="Clear conversation"
+          className="text-white/80 transition-colors hover:text-white"
         >
-          Clear
+          <Trash2 size={15} />
         </button>
       </div>
 
@@ -80,19 +83,18 @@ export default function ChatPanel() {
           <div className="space-y-3 text-sm text-zinc-600 dark:text-zinc-400">
             <p>Hi! I can answer questions about my skills, experience and projects.</p>
             <p className="font-medium text-zinc-700 dark:text-zinc-300">Try asking:</p>
-            <ul className="space-y-1.5">
+            <div className="flex flex-col gap-2">
               {SUGGESTED_QUESTIONS.map((q) => (
-                <li key={q}>
-                  <button
-                    type="button"
-                    onClick={() => submitMessage(q)}
-                    className="text-left text-zinc-900 underline underline-offset-4 hover:text-zinc-600 dark:text-zinc-50 dark:hover:text-zinc-300"
-                  >
-                    {q}
-                  </button>
-                </li>
+                <button
+                  key={q}
+                  type="button"
+                  onClick={() => submitMessage(q)}
+                  className="rounded-xl border border-zinc-200 px-3 py-2 text-left text-zinc-700 transition-colors hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 dark:border-zinc-800 dark:text-zinc-300 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-300"
+                >
+                  {q}
+                </button>
               ))}
-            </ul>
+            </div>
           </div>
         )}
 
@@ -101,7 +103,7 @@ export default function ChatPanel() {
             key={i}
             className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
               m.role === "user"
-                ? "ml-auto bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900"
+                ? "ml-auto bg-linear-to-br from-indigo-500 to-purple-500 text-white"
                 : "bg-zinc-100 text-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
             }`}
           >
@@ -109,14 +111,16 @@ export default function ChatPanel() {
               <ReactMarkdown>{m.content}</ReactMarkdown>
             </div>
             {m.sources?.length > 0 && (
-              <p className="mt-1 text-xs opacity-60">Sources: {m.sources.join(", ")}</p>
+              <p className="mt-1 text-xs opacity-70">Sources: {m.sources.join(", ")}</p>
             )}
           </div>
         ))}
 
         {loading && (
-          <div className="w-fit rounded-2xl bg-zinc-100 px-3 py-2 text-sm text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
-            Thinking…
+          <div className="flex w-fit items-center gap-1 rounded-2xl bg-zinc-100 px-4 py-3 dark:bg-zinc-900">
+            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-400 [animation-delay:-0.3s]" />
+            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-400 [animation-delay:-0.15s]" />
+            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-400" />
           </div>
         )}
 
@@ -136,14 +140,15 @@ export default function ChatPanel() {
           value={input}
           onChange={(e) => setInput(e.target.value.slice(0, MAX_MESSAGE_LENGTH))}
           placeholder="Ask a question..."
-          className="flex-1 rounded-full border border-zinc-300 bg-transparent px-4 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700"
+          className="flex-1 rounded-full border border-zinc-300 bg-transparent px-4 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700"
         />
         <button
           type="submit"
           disabled={loading || !input.trim()}
-          className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40 dark:bg-zinc-50 dark:text-zinc-900"
+          aria-label="Send"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-indigo-500 to-purple-500 text-white transition-transform hover:scale-105 disabled:opacity-40 disabled:hover:scale-100"
         >
-          Send
+          <Send size={15} />
         </button>
       </form>
     </div>

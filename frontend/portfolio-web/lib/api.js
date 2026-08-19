@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 // Server Components (page.js files) fetch from inside this container, so they need a
 // URL that resolves on the Docker network — e.g. API_INTERNAL_URL=http://portfolio-api:8080
 // in docker-compose. Falls back to the public URL for local dev where both run on the
@@ -30,21 +32,13 @@ async function getJson(path, fallback = null) {
   }
 }
 
-export function getProfile() {
-  return getJson("/api/profile");
-}
-
-export function getSkills() {
-  return getJson("/api/skills");
-}
-
-export function getProjects() {
-  return getJson("/api/projects", []);
-}
-
-export function getExperience() {
-  return getJson("/api/experience", []);
-}
+// Wrapped in React's cache() so multiple call sites in the same request (e.g. layout's
+// generateMetadata + the layout body + a page all wanting the profile) share one fetch
+// instead of hitting the API repeatedly per request.
+export const getProfile = cache(() => getJson("/api/profile"));
+export const getSkills = cache(() => getJson("/api/skills"));
+export const getProjects = cache(() => getJson("/api/projects", []));
+export const getExperience = cache(() => getJson("/api/experience", []));
 
 /**
  * Send a message to the AI portfolio assistant. Runs in the browser (called from

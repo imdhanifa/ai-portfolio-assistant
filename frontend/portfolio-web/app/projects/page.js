@@ -1,17 +1,20 @@
+import { FolderGit2 } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import Projects from "@/components/Projects";
 import { getProjects } from "@/lib/api";
 
-export const metadata = { title: "Projects | Portfolio" };
+export const metadata = {
+  title: "Projects",
+  description: "A selection of projects, including the technologies used to build each one.",
+};
 
 export default async function ProjectsPage() {
   const projects = await getProjects();
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-16">
-      <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-50">Projects</h1>
-      <div className="mt-8">
-        <Projects projects={projects} />
-      </div>
+      <PageHeader icon={FolderGit2} title="Projects" />
+      <Projects projects={projects} />
     </div>
   );
 }
