@@ -22,8 +22,13 @@ coming from Grok immediately — no code changes needed. Also double check
 `Grok:Model` in [appsettings.json](backend/Portfolio.Api/appsettings.json) (currently
 `grok-4-fast`, an unverified guess) against `GET /v1/models` once the account can call it.
 
-Real content (`data/profile.json`, `skills.json`, `projects.json`, `experience.json`,
-`data/resume.pdf`) is still placeholder — see [data/README.md](data/README.md).
+Real content is in (`data/profile.json`, `skills.json`, `projects.json`, `experience.json`,
+`data/resume.pdf`) — see [data/README.md](data/README.md) for two details worth double
+checking against the source resume. Rate limiting is also in place (10 req/min on
+`POST /api/chat`, 100 req/min globally — see `RateLimiting` in
+[appsettings.json](backend/Portfolio.Api/appsettings.json)), and `docker compose up --build`
+has been run and verified end-to-end (all three containers healthy, portfolio pages
+rendering real data server-side).
 
 ## Project layout
 
@@ -69,24 +74,30 @@ This starts `portfolio-web` (3000), `portfolio-api` (8080) and `qdrant` (6333), 
 
 ## Configuration
 
-| Variable            | Where              | Purpose                                  |
-| -------------------- | ------------------ | ----------------------------------------- |
-| `XAI_API_KEY`         | backend             | Grok (xAI) API key — never expose to the frontend |
-| `QDRANT_URL`          | backend             | Qdrant endpoint (defaults to `http://localhost:6333` / `http://qdrant:6333` in Compose) |
-| `NEXT_PUBLIC_API_URL` | frontend, build-time | Base URL the browser uses to call the API |
+| Variable              | Where                 | Purpose                                  |
+| ---------------------- | --------------------- | ----------------------------------------- |
+| `XAI_API_KEY`           | backend                | Grok (xAI) API key — never expose to the frontend |
+| `QDRANT_URL`            | backend                | Qdrant endpoint (defaults to `http://localhost:6333` / `http://qdrant:6333` in Compose) |
+| `NEXT_PUBLIC_API_URL`   | frontend, build-time   | Base URL the **browser** uses to call the API |
+| `API_INTERNAL_URL`      | frontend, runtime      | Base URL **Server Components** use to call the API — must be the Docker-internal address (`http://portfolio-api:8080` in Compose), since `localhost` inside the web container doesn't reach the API container |
+
+## API docs & testing
+
+- **Postman collection**: [postman/Portfolio-Api.postman_collection.json](postman/Portfolio-Api.postman_collection.json) — health, all four `GET /api/*` endpoints, and a few `POST /api/chat` examples (including a 400-validation case). Import it, set the `baseUrl` variable (`http://localhost:5290` for `dotnet run`, `http://localhost:8080` for Compose), and go. Verified with `newman run` against the live containers — all 9 requests pass.
+- **Interactive OpenAPI docs (Scalar)**: run the API in `Development` and open `{{baseUrl}}/scalar/v1` (backed by the raw spec at `/openapi/v1.json`). Not exposed in Production.
 
 ## Next steps (Phases 3, 5-9)
 
 1. **RAG** — implement `ResumeLoader` (PDF text extraction), wire `EmbeddingService` to a
    real embeddings endpoint, implement `VectorStore` against Qdrant, fill in `RagService`.
-   Needs `data/resume.pdf`.
+   `data/resume.pdf` is in place (see its caveat in [data/README.md](data/README.md)).
 2. ~~**Grok** — implement `GrokClient.CompleteAsync`.~~ Done — calls
    `POST /v1/chat/completions`; blocked only on the xAI account having credits (see Status).
 3. **MCP protocol** — expose `PortfolioMcpServer`'s tools over an actual MCP transport
    (currently called in-process only).
 4. **Orchestration** — replace the keyword heuristic in `ChatService.SelectRelevantTools`
    with real LLM-driven tool selection.
-5. **Production hardening** — rate limiting, structured logging, CORS locked to the real
-   domain, resume ingestion CLI/endpoint.
+5. **Production hardening** — ~~rate limiting~~ (done), structured logging, CORS locked to
+   the real domain, resume ingestion CLI/endpoint.
 6. **Deploy** — push to GitHub, connect to Coolify on the Hostinger VPS, set env vars,
    point `api.yourdomain.com` / `yourdomain.com` at the containers.

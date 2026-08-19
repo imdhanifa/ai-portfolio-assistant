@@ -1,5 +1,6 @@
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
+using Scalar.AspNetCore;
 using Portfolio.Api;
 using Portfolio.Api.AI;
 using Portfolio.Api.MCP;
@@ -119,6 +120,9 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    // Interactive API docs at /scalar/v1, generated from the /openapi/v1.json AddOpenApi()
+    // produces above. Dev-only - not exposed in Production.
+    app.MapScalarApiReference();
 }
 
 app.UseHttpsRedirection();
