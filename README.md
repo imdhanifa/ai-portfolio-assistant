@@ -15,12 +15,16 @@ back to a placeholder answer (built from whatever MCP tool data matches the ques
 Grok call fails for any reason — no API key configured, no account credits, network error,
 etc. — so the endpoint and UI stay testable no matter what state the Grok account is in.
 
-**Grok is wired up but the xAI account has no credits yet** (confirmed via a live API call —
-auth succeeds, `403 permission-denied` with "doesn't have any credits or licenses yet").
-Add credits at the URL in that error / on [console.x.ai](https://console.x.ai), and answers will start
-coming from Grok immediately — no code changes needed. Also double check
-`Grok:Model` in [appsettings.json](backend/Portfolio.Api/appsettings.json) (currently
-`grok-4-fast`, an unverified guess) against `GET /v1/models` once the account can call it.
+**Grok is wired up but the xAI account has no credits yet** (confirmed via repeated live API
+calls — auth succeeds, `403 permission-denied` with "doesn't have any credits or licenses
+yet"). Add credits at the URL in that error / on [console.x.ai](https://console.x.ai), and
+answers will start coming from Grok immediately — no code changes needed.
+`GrokClient` calls xAI's **Responses API** (`POST /v1/responses`, an `input` array rather than
+the older `messages` chat/completions shape), model `grok-4.6` — both confirmed against a
+real xAI-documented example, reaching the endpoint (403 billing-gate, not 404/format-rejected).
+The success-response parsing in `GrokClient.ExtractOutputText` is written defensively against
+the documented convention but hasn't been exercised against a real 200 yet — worth a quick
+sanity check the first time credits land.
 
 Real content is in (`data/profile.json`, `skills.json`, `projects.json`, `experience.json`,
 `data/resume.pdf`) — see [data/README.md](data/README.md) for two details worth double

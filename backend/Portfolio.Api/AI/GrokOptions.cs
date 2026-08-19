@@ -11,10 +11,10 @@ public class GrokOptions
     public string BaseUrl { get; set; } = "https://api.x.ai/v1";
 
     /// <summary>
-    /// TODO: confirm against GET https://api.x.ai/v1/models (requires an account with
-    /// credits) or https://docs.x.ai/docs/models, then override via appsettings/env if
-    /// this default is stale. "grok-beta" is retired; "grok-4-fast" is this scaffold's
-    /// best-effort guess as of 2026-08 and has NOT been verified against a live account.
+    /// From a working xAI-documented curl example (model "grok-4.6" against POST
+    /// /v1/responses) - more trustworthy than the earlier "grok-4-fast" guess, but still
+    /// not confirmed end-to-end against a real 200 response (the account has no credits
+    /// yet). Override via appsettings/env if this turns out to be stale.
     /// </summary>
-    public string Model { get; set; } = "grok-4-fast";
+    public string Model { get; set; } = "grok-4.6";
 }
