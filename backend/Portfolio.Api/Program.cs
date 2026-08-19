@@ -1,3 +1,6 @@
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+using Portfolio.Api;
 using Portfolio.Api.AI;
 using Portfolio.Api.MCP;
 using Portfolio.Api.MCP.Tools;
@@ -25,6 +28,9 @@ builder.Services.Configure<GrokOptions>(builder.Configuration.GetSection(GrokOpt
 builder.Services.Configure<QdrantOptions>(builder.Configuration.GetSection(QdrantOptions.SectionName));
 builder.Services.Configure<PortfolioDataOptions>(builder.Configuration.GetSection(PortfolioDataOptions.SectionName));
 
+var rateLimiting = new RateLimitingOptions();
+builder.Configuration.GetSection(RateLimitingOptions.SectionName).Bind(rateLimiting);
+
 const string FrontendCorsPolicy = "FrontendCorsPolicy";
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 
@@ -33,6 +39,43 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddHttpClient();
 builder.Services.AddHealthChecks();
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            new { error = "Too many requests. Please slow down and try again shortly." },
+            cancellationToken);
+    };
+
+    // Applied to POST /api/chat - the endpoint that triggers a billed Grok API call.
+    options.AddPolicy("chat", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: ClientIp(httpContext),
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = rateLimiting.Chat.PermitLimit,
+            Window = TimeSpan.FromSeconds(rateLimiting.Chat.WindowSeconds),
+            QueueLimit = 0,
+        }));
+
+    // Applied globally as a looser fallback for every other endpoint.
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: ClientIp(httpContext),
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = rateLimiting.Global.PermitLimit,
+                Window = TimeSpan.FromSeconds(rateLimiting.Global.WindowSeconds),
+                QueueLimit = 0,
+            }));
+});
+
+static string ClientIp(HttpContext httpContext) =>
+    httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
 builder.Services.AddCors(options =>
 {
@@ -80,6 +123,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors(FrontendCorsPolicy);
+app.UseRateLimiter();
 app.UseAuthorization();
 
 app.MapControllers();

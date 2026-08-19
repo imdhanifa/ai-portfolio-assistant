@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Portfolio.Api.AI;
 using Portfolio.Api.Models;
 
@@ -6,6 +7,7 @@ namespace Portfolio.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[EnableRateLimiting("chat")]
 public class ChatController(IChatService chatService) : ControllerBase
 {
     private const int MaxMessageLength = 2000;
@@ -14,6 +16,7 @@ public class ChatController(IChatService chatService) : ControllerBase
     [HttpPost]
     [ProducesResponseType<ChatResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult<ChatResponse>> Post([FromBody] ChatRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Message))
