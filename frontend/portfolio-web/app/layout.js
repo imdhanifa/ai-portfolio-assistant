@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 
 const FALLBACK_TITLE = "Portfolio | Full Stack .NET Developer";
 const FALLBACK_DESCRIPTION =
-  "Personal portfolio with an AI assistant that answers questions about skills, experience and projects using RAG and MCP.";
+  "Personal portfolio with an AI assistant that answers questions about skills, experience and projects using MCP.";
 
 export async function generateMetadata() {
   const profile = await getProfile();
@@ -34,7 +34,7 @@ export async function generateMetadata() {
       template: `%s | ${profile?.name || "Portfolio"}`,
     },
     description,
-    keywords: [".NET", "ASP.NET Core", "Next.js", "Full Stack Developer", "AI", "RAG", "MCP", profile?.name].filter(
+    keywords: [".NET", "ASP.NET Core", "Next.js", "Full Stack Developer", "AI", "MCP", profile?.name].filter(
       Boolean,
     ),
     authors: profile?.name ? [{ name: profile.name, url: profile.website || SITE_URL }] : undefined,
@@ -92,7 +92,7 @@ export default async function RootLayout({ children }) {
           <footer className="border-t border-zinc-200 dark:border-zinc-800">
             <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 px-6 py-10 text-center sm:flex-row sm:justify-between sm:text-left">
               <p className="text-sm text-zinc-500 dark:text-zinc-500">
-                Built with Next.js, .NET 10, RAG, MCP and Grok.
+                Built with Next.js, .NET 10, MCP and Grok.
               </p>
               <div className="flex items-center gap-4">
                 {profile?.github && (

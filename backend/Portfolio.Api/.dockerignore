@@ -4,3 +4,8 @@ obj/
 **/obj/
 *.user
 .vs/
+
+# Provided at runtime via docker-compose's bind mount (./backend/Portfolio.Api/data:/data),
+# not baked into the image - dotnet publish wouldn't include it anyway (no matching csproj
+# content item), but excluding it keeps the build context smaller and the intent explicit.
+data/

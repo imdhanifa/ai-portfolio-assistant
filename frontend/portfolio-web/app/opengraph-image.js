@@ -54,7 +54,7 @@ export default async function Image() {
           {title}
         </div>
         <div style={{ display: "flex", color: "#818cf8", fontSize: 26, marginTop: 28 }}>
-          AI Portfolio Assistant · RAG · MCP · .NET
+          AI Portfolio Assistant · MCP · .NET
         </div>
       </div>
     ),

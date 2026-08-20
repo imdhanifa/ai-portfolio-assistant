@@ -1,10 +1,8 @@
-using Portfolio.Api.Models;
-
 namespace Portfolio.Api.AI;
 
 /// <summary>
-/// Builds the final prompt sent to Grok from the system rules, RAG context, MCP tool
-/// results and the user's question.
+/// Builds the final prompt sent to Grok from the system rules, MCP tool results and the
+/// user's question.
 /// </summary>
 public interface IPromptService
 {
@@ -12,8 +10,8 @@ public interface IPromptService
     string BuildSystemPrompt();
 
     /// <summary>
-    /// Combine retrieved resume chunks, MCP tool output and the user question into the
-    /// user-turn content sent to the model.
+    /// Combine MCP tool output and the user question into the user-turn content sent to
+    /// the model.
     /// </summary>
-    string BuildUserPrompt(string question, IReadOnlyList<RetrievedChunk> ragContext, IReadOnlyDictionary<string, string> mcpResults);
+    string BuildUserPrompt(string question, IReadOnlyDictionary<string, string> mcpResults);
 }

@@ -72,10 +72,9 @@ jobs:
         run: docker compose up --build -d
         env:
           # No real credentials needed: the app is designed to degrade gracefully
-          # (Grok -> OpenAI -> placeholder) when neither is configured, which is exactly
-          # what this smoke test exercises.
+          # (Grok -> placeholder) when it isn't configured, which is exactly what this
+          # smoke test exercises.
           XAI_API_KEY: ""
-          OPENAI_API_KEY: ""
       - name: Wait for services to be healthy
         run: |
           timeout 90 bash -c 'until curl -sf http://localhost:8080/health >/dev/null; do sleep 2; done'

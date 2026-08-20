@@ -3,9 +3,9 @@
 [![CI/CD](https://github.com/imdhanifa/ai-portfolio-assistant/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/imdhanifa/ai-portfolio-assistant/actions/workflows/ci-cd.yml)
 
 A personal portfolio built with Next.js and .NET 10, with a floating AI assistant powered by
-Grok (xAI). The assistant uses Retrieval-Augmented Generation (RAG) over a resume PDF and
-Model Context Protocol (MCP) tools over structured JSON data to answer questions about
-skills, experience and projects.
+Grok (xAI) — the project's only LLM provider. The assistant uses Model Context Protocol
+(MCP) tools over structured JSON data to answer questions about skills, experience and
+projects.
 
 ## Status
 
@@ -18,34 +18,31 @@ verified live: asking about projects and skills returns an accurate, well-format
 correctly grounded in the real MCP data (`get_projects`/`get_skills`/`get_profile`), no
 hallucination.
 
-**RAG is implemented** (`ResumeLoader` via PdfPig, `VectorStore` against Qdrant's REST API,
-`RagService` orchestrating lazy ingestion + query) but not yet answering questions, because
-embeddings go through OpenAI (xAI has no embedding-capable model on this account - checked
-live) and **the OpenAI account has no usable credits**: the key is valid and the request
-format is confirmed correct (`429 insufficient_quota`, not 401/404 - auth and shape both
-correct, purely a billing gate), covering both its role as the embeddings provider and as
-the chat fallback if Grok ever fails again. `RagService.SearchAsync` catches this and
-returns no resume context rather than failing the whole chat request, so `POST /api/chat`
-keeps working end-to-end either way. Add credits at
-[platform.openai.com/account/billing](https://platform.openai.com/account/billing) and RAG
-starts answering immediately, no code changes needed — first real embedding response is
-worth a quick sanity check (see the RAG item in Next Steps below for why).
+**This project is Grok-only by design** — no OpenAI or other LLM provider is wired in, and
+RAG (resume PDF retrieval via embeddings + Qdrant) isn't used, since xAI has no
+embedding-capable model on this account (checked live: `GET https://api.x.ai/v1/models`
+lists only chat/image/video models) and bringing in a second provider just for embeddings
+was a deliberate no. The assistant answers purely from MCP tool data (profile/skills/
+projects/experience). See the security note in Next Steps below for a squatted NuGet
+package discovered and avoided while RAG was briefly explored — worth keeping in mind if
+PDF parsing is ever revisited.
 
-Real content is in (`data/profile.json`, `skills.json`, `projects.json`, `experience.json`,
-`data/resume.pdf`) — see [data/README.md](data/README.md) for two details worth double
-checking against the source resume. Rate limiting is also in place (10 req/min on
-`POST /api/chat`, 100 req/min globally — see `RateLimiting` in
+Real content is in (`backend/Portfolio.Api/data/profile.json`, `skills.json`,
+`projects.json`, `experience.json`, `resume.pdf`) — see
+[backend/Portfolio.Api/data/README.md](backend/Portfolio.Api/data/README.md) for two
+details worth double checking against the source resume. Rate limiting is also in place
+(10 req/min on `POST /api/chat`, 100 req/min globally — see `RateLimiting` in
 [appsettings.json](backend/Portfolio.Api/appsettings.json)), and `docker compose up --build`
-has been run and verified end-to-end (all three containers healthy, portfolio pages
-rendering real data server-side).
+has been run and verified end-to-end (both containers healthy, portfolio pages rendering
+real data server-side).
 
 ## Project layout
 
 ```text
-frontend/portfolio-web/   Next.js portfolio site + AI chat UI
-backend/Portfolio.Api/    ASP.NET Core (.NET 10) API — AI orchestration, RAG, MCP
-data/                     profile.json, skills.json, projects.json, experience.json, resume.pdf
-docker-compose.yml        portfolio-web + portfolio-api + qdrant
+frontend/portfolio-web/          Next.js portfolio site + AI chat UI
+backend/Portfolio.Api/           ASP.NET Core (.NET 10) API — Grok orchestration, MCP
+backend/Portfolio.Api/data/      profile.json, skills.json, projects.json, experience.json, resume.pdf
+docker-compose.yml               portfolio-web + portfolio-api
 ```
 
 See the full architecture and phased plan in the original project spec (shared in this
@@ -78,8 +75,8 @@ cp .env.example .env   # fill in XAI_API_KEY once Phase 4 lands
 docker compose up --build
 ```
 
-This starts `portfolio-web` (3000), `portfolio-api` (8080) and `qdrant` (6333), with
-`./data` mounted read-only into the API container.
+This starts `portfolio-web` (3000) and `portfolio-api` (8080), with
+`./backend/Portfolio.Api/data` mounted read-only into the API container.
 
 `docker-compose.yml` itself publishes **no host ports** — it's what Coolify (or anything
 else running `docker compose -f docker-compose.yml up`) deploys as-is, and hard-binding a
@@ -96,9 +93,7 @@ configure your platform's equivalent of domain → internal-port routing.
 
 | Variable              | Where                 | Purpose                                  |
 | ---------------------- | --------------------- | ----------------------------------------- |
-| `XAI_API_KEY`           | backend                | Grok (xAI) API key, primary LLM — never expose to the frontend |
-| `OPENAI_API_KEY`        | backend                | OpenAI API key, fallback LLM used automatically if Grok fails — never expose to the frontend |
-| `QDRANT_URL`            | backend                | Qdrant endpoint (defaults to `http://localhost:6333` / `http://qdrant:6333` in Compose) |
+| `XAI_API_KEY`           | backend                | Grok (xAI) API key — the project's only LLM provider, never expose to the frontend |
 | `NEXT_PUBLIC_API_URL`   | frontend, build-time   | Base URL the **browser** uses to call the API |
 | `API_INTERNAL_URL`      | frontend, runtime      | Base URL **Server Components** use to call the API — must be the Docker-internal address (`http://portfolio-api:8080` in Compose), since `localhost` inside the web container doesn't reach the API container |
 
@@ -115,8 +110,8 @@ configure your platform's equivalent of domain → internal-port routing.
 2. **frontend** — `eslint` + `next build`.
 3. **docker-build** — builds both Dockerfiles (build-only, no push), catching Dockerfile
    issues plain builds wouldn't.
-4. **e2e-smoke** — the real test: `docker compose up --build` with no API keys configured
-   (exercising the same Grok → OpenAI → placeholder fallback chain described above),
+4. **e2e-smoke** — the real test: `docker compose up --build` with no API key configured
+   (exercising the same Grok → placeholder fallback chain described above),
    waits for both services to be healthy, runs the full [Postman collection](postman/Portfolio-Api.postman_collection.json)
    via `newman`, and checks the homepage actually server-rendered real profile data (the
    exact class of bug caught manually earlier — see the "Fix portfolio-web unable to reach
@@ -137,32 +132,22 @@ configure your platform's equivalent of domain → internal-port routing.
 
 ## Next steps (Phases 3, 5-9)
 
-1. ~~**RAG**~~ Done, pending OpenAI credits (see Status):
-   - `EmbeddingService` — OpenAI's `POST /v1/embeddings` (`text-embedding-3-small`, batched
-     up to 100 inputs/request). Live-verified request shape (`429 insufficient_quota`, not
-     401/404).
-   - `ResumeLoader` — PDF text extraction via [PdfPig](https://github.com/UglyToad/PdfPig)
-     (`ContentOrderTextExtractor`, not the raw `page.Text` PdfPig's own docs warn against).
-     **NuGet package id is `PdfPig`, not `UglyToad.PdfPig`** — the latter is a squatted
-     lookalike package (owner `grinay`, not the real maintainers; placeholder
-     `"Package Description"`; a suspicious `-custom-5` version) that showed up first when
-     guessing the id from the GitHub org name. Caught by checking NuGet ownership metadata
-     before installing anything — worth remembering if this ever needs reinstalling.
-   - `VectorStore` — raw REST calls to Qdrant (no client SDK dependency, matching the
-     GrokClient/OpenAiClient pattern already in this codebase). Every endpoint shape
-     (`PUT /collections/{name}`, `PUT .../points`, `POST .../points/query` — Qdrant
-     deprecated the older `.../points/search` in favor of this) was verified live against a
-     running Qdrant instance before being implemented, not assumed from memory.
-   - `RagService` — lazily ingests the resume (chunk → embed → upsert) on first search if
-     the `portfolio_resume` collection is empty, guarded by a semaphore so concurrent
-     requests don't double-ingest; embeds the question and queries Qdrant otherwise. Vector
-     dimension for the Qdrant collection comes from the actual first embedding response
-     rather than a hardcoded guess. Wrapped in try/catch so a RAG failure (no OpenAI
-     credits, Qdrant down, etc.) never fails the whole chat request — same graceful-fallback
-     principle as the rest of `ChatService`.
+1. ~~**RAG**~~ Not pursued — this project is Grok-only, and xAI has no embeddings API on
+   this account, so there's no in-house way to generate embeddings without a second LLM
+   provider (a deliberate exclusion). `ResumeLoader`, `VectorStore` (raw REST against
+   Qdrant) and `RagService` were fully implemented and verified live at one point, then
+   removed along with Qdrant and OpenAI to keep the stack Grok-only. One thing worth
+   keeping from that work: while adding PDF parsing, `dotnet add package UglyToad.PdfPig`
+   (guessed from the project's GitHub org name) resolved to a **squatted lookalike NuGet
+   package** — owner `grinay` (not the real maintainers), a literal placeholder
+   `"Package Description"`, a version tagged `-custom-5`. The real package id is simply
+   `PdfPig` (owners `BobLd`/`EliotJones`, real description, 29M downloads) — it still
+   exposes the `UglyToad.PdfPig` *namespace*, which is exactly what made the squatted
+   *package id* so plausible. Worth remembering if PDF parsing is ever revisited, on this
+   project or any other .NET one.
 2. ~~**Grok** — implement `GrokClient.CompleteAsync`.~~ Done and **confirmed live** — see
-   Status. An OpenAI fallback (`OpenAiClient`) is also wired in for if Grok ever fails again
-   — `ChatService` tries Grok, then OpenAI, then the placeholder.
+   Status. This project is Grok-only by design: no other LLM provider is wired in.
+   `ChatService` tries Grok, then falls straight to the placeholder if it fails.
 3. **MCP protocol** — expose `PortfolioMcpServer`'s tools over an actual MCP transport
    (currently called in-process only).
 4. **Orchestration** — replace the keyword heuristic in `ChatService.SelectRelevantTools`

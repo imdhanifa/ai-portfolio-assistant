@@ -13,7 +13,7 @@ export default function Resume() {
         </span>
         <p className="max-w-md text-zinc-600 dark:text-zinc-400">
           Download the full resume as a PDF, or ask the AI assistant about specific skills,
-          projects or experience — its answers are grounded in this same document via RAG.
+          projects or experience.
         </p>
         <a
           href="/resume.pdf"

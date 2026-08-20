@@ -13,11 +13,11 @@ function initials(name) {
 }
 
 export default function Hero({ profile }) {
-  const name = profile?.name || "Your Name";
+  const name = profile?.name || "MOHAMED HANIFA";
   const title = profile?.title || "Full Stack .NET Developer";
   const summary =
     profile?.summary ||
-    "Building scalable web applications with .NET, AI, RAG, MCP and modern frontend technologies.";
+    "Building scalable web applications with .NET, AI, MCP and modern frontend technologies.";
 
   return (
     <section className="relative overflow-hidden">

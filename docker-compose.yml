@@ -31,20 +31,7 @@ services:
       context: ./backend/Portfolio.Api
     environment:
       XAI_API_KEY: ${XAI_API_KEY}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      QDRANT_URL: http://qdrant:6333
       PortfolioData__DataDirectory: /data
     volumes:
-      - ./data:/data:ro
-    depends_on:
-      - qdrant
+      - ./backend/Portfolio.Api/data:/data:ro
     restart: unless-stopped
-
-  qdrant:
-    image: qdrant/qdrant:latest
-    volumes:
-      - qdrant-data:/qdrant/storage
-    restart: unless-stopped
-
-volumes:
-  qdrant-data:

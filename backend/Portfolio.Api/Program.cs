@@ -5,36 +5,20 @@ using Portfolio.Api;
 using Portfolio.Api.AI;
 using Portfolio.Api.MCP;
 using Portfolio.Api.MCP.Tools;
-using Portfolio.Api.RAG;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // --- Configuration ---------------------------------------------------------
-// Map the spec's plain env var names (section 20) onto the nested config keys the
-// options classes bind to, so `XAI_API_KEY` / `QDRANT_URL` work as documented instead
-// of requiring ASP.NET Core's double-underscore convention (Grok__ApiKey).
+// Map the spec's plain env var name (section 20) onto the nested config key the options
+// class binds to, so `XAI_API_KEY` works as documented instead of requiring ASP.NET Core's
+// double-underscore convention (Grok__ApiKey).
 var xaiApiKey = Environment.GetEnvironmentVariable("XAI_API_KEY");
 if (!string.IsNullOrEmpty(xaiApiKey))
 {
     builder.Configuration["Grok:ApiKey"] = xaiApiKey;
 }
 
-// OpenAI fallback provider (used when Grok fails - see ChatService).
-var openAiApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-if (!string.IsNullOrEmpty(openAiApiKey))
-{
-    builder.Configuration["OpenAi:ApiKey"] = openAiApiKey;
-}
-
-var qdrantUrl = Environment.GetEnvironmentVariable("QDRANT_URL");
-if (!string.IsNullOrEmpty(qdrantUrl))
-{
-    builder.Configuration["Qdrant:Url"] = qdrantUrl;
-}
-
 builder.Services.Configure<GrokOptions>(builder.Configuration.GetSection(GrokOptions.SectionName));
-builder.Services.Configure<OpenAiOptions>(builder.Configuration.GetSection(OpenAiOptions.SectionName));
-builder.Services.Configure<QdrantOptions>(builder.Configuration.GetSection(QdrantOptions.SectionName));
 builder.Services.Configure<PortfolioDataOptions>(builder.Configuration.GetSection(PortfolioDataOptions.SectionName));
 
 var rateLimiting = new RateLimitingOptions();
@@ -104,17 +88,9 @@ builder.Services.AddCors(options =>
 });
 
 // AI services
-builder.Services.AddSingleton<IEmbeddingService, EmbeddingService>();
-builder.Services.AddSingleton<IRagService, RagService>();
 builder.Services.AddSingleton<IPromptService, PromptService>();
 builder.Services.AddSingleton<IGrokClient, GrokClient>();
-builder.Services.AddSingleton<IOpenAiClient, OpenAiClient>();
 builder.Services.AddScoped<IChatService, ChatService>();
-
-// RAG pipeline building blocks
-builder.Services.AddSingleton<ResumeLoader>();
-builder.Services.AddSingleton<DocumentChunker>();
-builder.Services.AddSingleton<VectorStore>();
 
 // MCP tools + server
 builder.Services.AddSingleton<IPortfolioTool, ProfileTool>();
