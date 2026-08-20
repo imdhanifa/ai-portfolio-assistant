@@ -92,16 +92,14 @@ docker compose up --build
 This starts `portfolio-web` (3000) and `portfolio-api` (8080), with
 `./backend/Portfolio.Api/Data` mounted read-only into the API container.
 
-`docker-compose.yml` itself publishes **no host ports** — it's what Coolify (or anything
-else running `docker compose -f docker-compose.yml up`) deploys as-is, and hard-binding a
-fixed host port on a shared VPS is both unnecessary (Coolify's own proxy routes by domain
-straight into the Docker network) and prone to conflicts with whatever else is already using
-that port on the box. `docker-compose.override.yml` adds the `3000`/`8080`/`6333` port
-publishing back for local dev only — plain `docker compose up` (no `-f` flag, which is what
-every command in this README uses) auto-merges it in, while an explicit `-f docker-compose.yml`
-invocation (what Coolify uses) does not. If you deploy this elsewhere without Coolify's
-domain-based proxying, you'll need to either add ports back to `docker-compose.yml` or
-configure your platform's equivalent of domain → internal-port routing.
+`docker-compose.yml` publishes fixed host ports (3000, 8080) directly — simplest for local
+dev, but worth knowing if you deploy this exact file on a shared VPS: a fixed host-port
+bind fails outright if anything else on the box already holds that port (this actually
+happened once on Coolify — see the "Fix Coolify deploy failure" commit). If you hit that
+again, the fix is to drop the `ports:` blocks and configure domain-based routing in
+Coolify's "Domains" tab instead (its proxy can route straight into the Docker network by
+service + internal port, no host port needed) — there's no override-file split for this
+anymore, so that trade-off is a manual edit either way.
 
 ## Configuration
 
