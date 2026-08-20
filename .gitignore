@@ -25,5 +25,8 @@ backend/**/obj/
 .DS_Store
 Thumbs.db
 
+# Claude Code local tooling state
+.claude/
+
 # Logs
 *.log
