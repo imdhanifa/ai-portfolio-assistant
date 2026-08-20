@@ -41,6 +41,15 @@ export const getProjects = cache(() => getJson("/api/projects", []));
 export const getExperience = cache(() => getJson("/api/experience", []));
 
 /**
+ * Absolute URL to the dynamically-generated, ATS-friendly resume PDF. A plain <a href>
+ * download, not a fetch() — runs in the browser, so it needs the public API URL. The
+ * backend regenerates the PDF from the live portfolio data on every request.
+ */
+export function getResumePdfUrl() {
+  return `${CLIENT_API_URL}/api/resume/pdf`;
+}
+
+/**
  * Send a message to the AI portfolio assistant. Runs in the browser (called from
  * client components), so it uses the public API URL. Throws on failure so the caller
  * (ChatPanel) can render an error state.

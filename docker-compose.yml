@@ -33,5 +33,5 @@ services:
       XAI_API_KEY: ${XAI_API_KEY}
       PortfolioData__DataDirectory: /data
     volumes:
-      - ./backend/Portfolio.Api/data:/data:ro
+      - ./backend/Portfolio.Api/Data:/data:ro
     restart: unless-stopped

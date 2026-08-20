@@ -63,6 +63,31 @@
             "url": { "raw": "{{baseUrl}}/api/experience", "host": ["{{baseUrl}}"], "path": ["api", "experience"] }
           },
           "response": []
+        },
+        {
+          "name": "Get Education",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/education", "host": ["{{baseUrl}}"], "path": ["api", "education"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Resume",
+      "description": "Dynamically generates an ATS-friendly resume PDF from the current portfolio data on every request (no static file involved).",
+      "item": [
+        {
+          "name": "Download Resume PDF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/resume/pdf", "host": ["{{baseUrl}}"], "path": ["api", "resume", "pdf"] },
+            "description": "Returns application/pdf with a Content-Disposition: attachment filename derived from the portfolio owner's name."
+          },
+          "response": []
         }
       ]
     },

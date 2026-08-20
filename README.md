@@ -27,21 +27,35 @@ projects/experience). See the security note in Next Steps below for a squatted N
 package discovered and avoided while RAG was briefly explored — worth keeping in mind if
 PDF parsing is ever revisited.
 
-Real content is in (`backend/Portfolio.Api/data/profile.json`, `skills.json`,
-`projects.json`, `experience.json`, `resume.pdf`) — see
-[backend/Portfolio.Api/data/README.md](backend/Portfolio.Api/data/README.md) for two
+Real content is in (`backend/Portfolio.Api/Data/profile.json`, `skills.json`,
+`projects.json`, `experience.json`, `education.json`) — see
+[backend/Portfolio.Api/Data/README.md](backend/Portfolio.Api/Data/README.md) for two
 details worth double checking against the source resume. Rate limiting is also in place
 (10 req/min on `POST /api/chat`, 100 req/min globally — see `RateLimiting` in
 [appsettings.json](backend/Portfolio.Api/appsettings.json)), and `docker compose up --build`
 has been run and verified end-to-end (both containers healthy, portfolio pages rendering
 real data server-side).
 
+**The resume PDF is generated on demand, not a static file.** `GET /api/resume/pdf`
+([`ResumeController`](backend/Portfolio.Api/Controllers/ResumeController.cs)) builds an
+ATS-friendly PDF (single column, real selectable text, standard section headings, plain
+bullet lists — no images, tables, or multi-column layout that could scramble how an
+Applicant Tracking System reads it) straight from the same JSON files everything else
+reads, via [QuestPDF](https://www.questpdf.com) (free Community license — this project
+qualifies as an individual, non-commercial use). Verified both locally and **inside the
+actual Linux Docker container** (the real risk with SkiaSharp-based PDF libraries: a bare
+`aspnet:10.0` image has no fonts installed) — rendered identically correctly in both, no
+font warnings in the container logs, so no extra `fontconfig`/font packages needed in the
+Dockerfile. The frontend's "Download Resume" button links straight to this endpoint
+(`lib/api.js` → `getResumePdfUrl()`); there's no `resume.pdf` file anywhere in the repo
+anymore.
+
 ## Project layout
 
 ```text
 frontend/portfolio-web/          Next.js portfolio site + AI chat UI
 backend/Portfolio.Api/           ASP.NET Core (.NET 10) API — Grok orchestration, MCP
-backend/Portfolio.Api/data/      profile.json, skills.json, projects.json, experience.json, resume.pdf
+backend/Portfolio.Api/Data/      profile.json, skills.json, projects.json, experience.json, education.json
 docker-compose.yml               portfolio-web + portfolio-api
 ```
 
@@ -76,7 +90,7 @@ docker compose up --build
 ```
 
 This starts `portfolio-web` (3000) and `portfolio-api` (8080), with
-`./backend/Portfolio.Api/data` mounted read-only into the API container.
+`./backend/Portfolio.Api/Data` mounted read-only into the API container.
 
 `docker-compose.yml` itself publishes **no host ports** — it's what Coolify (or anything
 else running `docker compose -f docker-compose.yml up`) deploys as-is, and hard-binding a
@@ -99,7 +113,7 @@ configure your platform's equivalent of domain → internal-port routing.
 
 ## API docs & testing
 
-- **Postman collection**: [postman/Portfolio-Api.postman_collection.json](postman/Portfolio-Api.postman_collection.json) — health, all four `GET /api/*` endpoints, and a few `POST /api/chat` examples (including a 400-validation case). Import it, set the `baseUrl` variable (`http://localhost:5290` for `dotnet run`, `http://localhost:8080` for Compose), and go. Verified with `newman run` against the live containers — all 9 requests pass.
+- **Postman collection**: [postman/Portfolio-Api.postman_collection.json](postman/Portfolio-Api.postman_collection.json) — health, all five `GET /api/*` MCP-backed endpoints, the resume PDF endpoint, and a few `POST /api/chat` examples (including a 400-validation case). Import it, set the `baseUrl` variable (`http://localhost:5290` for `dotnet run`, `http://localhost:8080` for Compose), and go. Verified with `newman run` against the live containers — all 11 requests pass.
 - **Interactive OpenAPI docs (Scalar)**: run the API in `Development` and open `{{baseUrl}}/scalar/v1` (backed by the raw spec at `/openapi/v1.json`). Not exposed in Production.
 
 ## CI/CD
@@ -144,15 +158,22 @@ configure your platform's equivalent of domain → internal-port routing.
    `PdfPig` (owners `BobLd`/`EliotJones`, real description, 29M downloads) — it still
    exposes the `UglyToad.PdfPig` *namespace*, which is exactly what made the squatted
    *package id* so plausible. Worth remembering if PDF parsing is ever revisited, on this
-   project or any other .NET one.
+   project or any other .NET one. PDF *generation* (a different problem) was in fact
+   revisited — see item 3 below — and the package-ownership check was applied again there
+   before installing anything.
 2. ~~**Grok** — implement `GrokClient.CompleteAsync`.~~ Done and **confirmed live** — see
    Status. This project is Grok-only by design: no other LLM provider is wired in.
    `ChatService` tries Grok, then falls straight to the placeholder if it fails.
-3. **MCP protocol** — expose `PortfolioMcpServer`'s tools over an actual MCP transport
+3. ~~**Resume PDF**~~ Done — `GET /api/resume/pdf` generates an ATS-friendly PDF on demand
+   via [QuestPDF](https://www.questpdf.com) (verified `owners: [MarcinZiabek, QuestPDF]`,
+   `verified: true` on NuGet before installing; free Community license). Added
+   `education.json` + `EducationTool`/`GET /api/education` alongside it, since the original
+   resume had an education section this project's data files didn't yet cover.
+4. **MCP protocol** — expose `PortfolioMcpServer`'s tools over an actual MCP transport
    (currently called in-process only).
-4. **Orchestration** — replace the keyword heuristic in `ChatService.SelectRelevantTools`
+5. **Orchestration** — replace the keyword heuristic in `ChatService.SelectRelevantTools`
    with real LLM-driven tool selection.
-5. **Production hardening** — ~~rate limiting~~ (done), structured logging, CORS locked to
-   the real domain, resume ingestion CLI/endpoint.
-6. **Deploy** — push to GitHub, connect to Coolify on the Hostinger VPS, set env vars,
+6. **Production hardening** — ~~rate limiting~~ (done), structured logging, CORS locked to
+   the real domain.
+7. **Deploy** — push to GitHub, connect to Coolify on the Hostinger VPS, set env vars,
    point `api.yourdomain.com` / `yourdomain.com` at the containers.

@@ -1,4 +1,5 @@
 import { Download, FileText } from "lucide-react";
+import { getResumePdfUrl } from "@/lib/api";
 
 export default function Resume() {
   return (
@@ -12,13 +13,12 @@ export default function Resume() {
           <FileText size={24} />
         </span>
         <p className="max-w-md text-zinc-600 dark:text-zinc-400">
-          Download the full resume as a PDF, or ask the AI assistant about specific skills,
+          Download the full resume as an ATS-friendly PDF, generated on the fly from the
+          same data behind this site, or ask the AI assistant about specific skills,
           projects or experience.
         </p>
         <a
-          href="/resume.pdf"
-          target="_blank"
-          rel="noopener noreferrer"
+          href={getResumePdfUrl()}
           className="flex items-center gap-2 rounded-full bg-linear-to-r from-indigo-500 to-purple-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-transform hover:scale-105"
         >
           <Download size={16} />

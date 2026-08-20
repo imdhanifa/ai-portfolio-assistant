@@ -26,6 +26,10 @@ public class PortfolioController(PortfolioMcpServer mcpServer) : ControllerBase
     public async Task<ContentResult> GetExperience(CancellationToken cancellationToken) =>
         await ToolResult("get_experience", cancellationToken);
 
+    [HttpGet("api/education")]
+    public async Task<ContentResult> GetEducation(CancellationToken cancellationToken) =>
+        await ToolResult("get_education", cancellationToken);
+
     private async Task<ContentResult> ToolResult(string toolName, CancellationToken cancellationToken)
     {
         var json = await mcpServer.CallToolAsync(toolName, cancellationToken) ?? "{}";

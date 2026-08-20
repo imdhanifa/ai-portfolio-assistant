@@ -1,10 +1,17 @@
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
+using QuestPDF.Infrastructure;
 using Scalar.AspNetCore;
 using Portfolio.Api;
 using Portfolio.Api.AI;
 using Portfolio.Api.MCP;
 using Portfolio.Api.MCP.Tools;
+using Portfolio.Api.Resume;
+
+// Community license: free for individuals, non-profits, open-source projects, and
+// organizations under $1M in annual gross revenue - covers this project. Required at
+// startup or QuestPDF throws when generating a document.
+QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -97,7 +104,12 @@ builder.Services.AddSingleton<IPortfolioTool, ProfileTool>();
 builder.Services.AddSingleton<IPortfolioTool, SkillsTool>();
 builder.Services.AddSingleton<IPortfolioTool, ProjectsTool>();
 builder.Services.AddSingleton<IPortfolioTool, ExperienceTool>();
+builder.Services.AddSingleton<IPortfolioTool, EducationTool>();
 builder.Services.AddSingleton<PortfolioMcpServer>();
+
+// Resume PDF generation
+builder.Services.AddSingleton<ResumeDataLoader>();
+builder.Services.AddSingleton<ResumePdfService>();
 
 var app = builder.Build();
 
