@@ -9,31 +9,27 @@ skills, experience and projects.
 
 ## Status
 
-This repo is currently **scaffolded** (Phase 1/2/4 of the plan below) — the portfolio UI,
-the .NET API shell, MCP tools (reading JSON), the real Grok + OpenAI API calls, and
-Docker/Compose setup all work end-to-end. RAG (Qdrant ingestion + search) is still stubbed
-with clear `NotImplementedException`s / TODO comments. `POST /api/chat` tries Grok first
-(the project's documented/primary LLM), falls back to OpenAI if Grok fails, and only falls
-back further to a placeholder answer (built from whatever MCP tool data matches the
-question) if *both* LLM calls fail — so the endpoint and UI stay testable no matter what
-state either account is in, and it starts giving real answers the instant either one has
-credits, no code changes needed.
+**Grok chat is live and confirmed working end-to-end** — the xAI account now has credits.
+`ChatController` → `ChatService` → `GrokClient` → xAI's Responses API (`POST /v1/responses`,
+model `grok-4.6`) returns real `200`s, and `GrokClient.ExtractOutputText`'s response parsing
+(previously written defensively against the documented convention but never exercised
+against a real success response) is now confirmed correct against actual output. Example
+verified live: asking about projects and skills returns an accurate, well-formatted answer
+correctly grounded in the real MCP data (`get_projects`/`get_skills`/`get_profile`), no
+hallucination.
 
-**Neither account has usable credits yet** (confirmed via repeated live API calls):
-
-- **Grok**: auth succeeds; `403` — first seen as "doesn't have any credits or licenses yet",
-  now "used all available credits or reached its monthly spending limit" (worth checking
-  [console.x.ai](https://console.x.ai) if that shift is unexpected). `GrokClient` calls xAI's
-  **Responses API** (`POST /v1/responses`, an `input` array, not the older `messages`
-  chat/completions shape), model `grok-4.6` — both confirmed against a real xAI-documented
-  example, reaching the endpoint (403 billing-gate, not 404/format-rejected). The
-  success-response parsing in `GrokClient.ExtractOutputText` is written defensively against
-  the documented convention but hasn't been exercised against a real 200 yet.
-- **OpenAI** (fallback): key is valid and the request format is confirmed correct — `429
-  insufficient_quota` (not 401), meaning auth passed and it's purely a billing gate. Calls
-  the standard Chat Completions API (`POST /v1/chat/completions`), model `gpt-4o-mini`.
-
-Add credits to either at [console.x.ai](https://console.x.ai) / [platform.openai.com/account/billing](https://platform.openai.com/account/billing).
+**RAG is implemented** (`ResumeLoader` via PdfPig, `VectorStore` against Qdrant's REST API,
+`RagService` orchestrating lazy ingestion + query) but not yet answering questions, because
+embeddings go through OpenAI (xAI has no embedding-capable model on this account - checked
+live) and **the OpenAI account has no usable credits**: the key is valid and the request
+format is confirmed correct (`429 insufficient_quota`, not 401/404 - auth and shape both
+correct, purely a billing gate), covering both its role as the embeddings provider and as
+the chat fallback if Grok ever fails again. `RagService.SearchAsync` catches this and
+returns no resume context rather than failing the whole chat request, so `POST /api/chat`
+keeps working end-to-end either way. Add credits at
+[platform.openai.com/account/billing](https://platform.openai.com/account/billing) and RAG
+starts answering immediately, no code changes needed — first real embedding response is
+worth a quick sanity check (see the RAG item in Next Steps below for why).
 
 Real content is in (`data/profile.json`, `skills.json`, `projects.json`, `experience.json`,
 `data/resume.pdf`) — see [data/README.md](data/README.md) for two details worth double
@@ -141,19 +137,32 @@ configure your platform's equivalent of domain → internal-port routing.
 
 ## Next steps (Phases 3, 5-9)
 
-1. **RAG** — implement `ResumeLoader` (PDF text extraction), implement `VectorStore` against
-   Qdrant, fill in `RagService`. `data/resume.pdf` is in place (see its caveat in
-   [data/README.md](data/README.md)). ~~Wire `EmbeddingService` to a real embeddings
-   endpoint.~~ Done — calls OpenAI's `POST /v1/embeddings` (`text-embedding-3-small`,
-   batched up to 100 inputs/request); xAI has no embedding-capable model on this account
-   (checked live), so this goes through OpenAI regardless of which provider answers chat.
-   Blocked only on the OpenAI account having credits, same as chat (see Status) — verified
-   via a temporary debug endpoint hitting the real API end-to-end (429 insufficient_quota,
-   not 401/404, so the request shape is confirmed correct) before being removed.
-2. ~~**Grok** — implement `GrokClient.CompleteAsync`.~~ Done — calls `POST /v1/responses`;
-   blocked only on the xAI account having credits (see Status). An OpenAI fallback
-   (`OpenAiClient`) is also wired in and equally blocked on credits, both automatically —
-   `ChatService` tries Grok, then OpenAI, then the placeholder.
+1. ~~**RAG**~~ Done, pending OpenAI credits (see Status):
+   - `EmbeddingService` — OpenAI's `POST /v1/embeddings` (`text-embedding-3-small`, batched
+     up to 100 inputs/request). Live-verified request shape (`429 insufficient_quota`, not
+     401/404).
+   - `ResumeLoader` — PDF text extraction via [PdfPig](https://github.com/UglyToad/PdfPig)
+     (`ContentOrderTextExtractor`, not the raw `page.Text` PdfPig's own docs warn against).
+     **NuGet package id is `PdfPig`, not `UglyToad.PdfPig`** — the latter is a squatted
+     lookalike package (owner `grinay`, not the real maintainers; placeholder
+     `"Package Description"`; a suspicious `-custom-5` version) that showed up first when
+     guessing the id from the GitHub org name. Caught by checking NuGet ownership metadata
+     before installing anything — worth remembering if this ever needs reinstalling.
+   - `VectorStore` — raw REST calls to Qdrant (no client SDK dependency, matching the
+     GrokClient/OpenAiClient pattern already in this codebase). Every endpoint shape
+     (`PUT /collections/{name}`, `PUT .../points`, `POST .../points/query` — Qdrant
+     deprecated the older `.../points/search` in favor of this) was verified live against a
+     running Qdrant instance before being implemented, not assumed from memory.
+   - `RagService` — lazily ingests the resume (chunk → embed → upsert) on first search if
+     the `portfolio_resume` collection is empty, guarded by a semaphore so concurrent
+     requests don't double-ingest; embeds the question and queries Qdrant otherwise. Vector
+     dimension for the Qdrant collection comes from the actual first embedding response
+     rather than a hardcoded guess. Wrapped in try/catch so a RAG failure (no OpenAI
+     credits, Qdrant down, etc.) never fails the whole chat request — same graceful-fallback
+     principle as the rest of `ChatService`.
+2. ~~**Grok** — implement `GrokClient.CompleteAsync`.~~ Done and **confirmed live** — see
+   Status. An OpenAI fallback (`OpenAiClient`) is also wired in for if Grok ever fails again
+   — `ChatService` tries Grok, then OpenAI, then the placeholder.
 3. **MCP protocol** — expose `PortfolioMcpServer`'s tools over an actual MCP transport
    (currently called in-process only).
 4. **Orchestration** — replace the keyword heuristic in `ChatService.SelectRelevantTools`
