@@ -141,9 +141,15 @@ configure your platform's equivalent of domain → internal-port routing.
 
 ## Next steps (Phases 3, 5-9)
 
-1. **RAG** — implement `ResumeLoader` (PDF text extraction), wire `EmbeddingService` to a
-   real embeddings endpoint, implement `VectorStore` against Qdrant, fill in `RagService`.
-   `data/resume.pdf` is in place (see its caveat in [data/README.md](data/README.md)).
+1. **RAG** — implement `ResumeLoader` (PDF text extraction), implement `VectorStore` against
+   Qdrant, fill in `RagService`. `data/resume.pdf` is in place (see its caveat in
+   [data/README.md](data/README.md)). ~~Wire `EmbeddingService` to a real embeddings
+   endpoint.~~ Done — calls OpenAI's `POST /v1/embeddings` (`text-embedding-3-small`,
+   batched up to 100 inputs/request); xAI has no embedding-capable model on this account
+   (checked live), so this goes through OpenAI regardless of which provider answers chat.
+   Blocked only on the OpenAI account having credits, same as chat (see Status) — verified
+   via a temporary debug endpoint hitting the real API end-to-end (429 insufficient_quota,
+   not 401/404, so the request shape is confirmed correct) before being removed.
 2. ~~**Grok** — implement `GrokClient.CompleteAsync`.~~ Done — calls `POST /v1/responses`;
    blocked only on the xAI account having credits (see Status). An OpenAI fallback
    (`OpenAiClient`) is also wired in and equally blocked on credits, both automatically —
