@@ -85,6 +85,17 @@ docker compose up --build
 This starts `portfolio-web` (3000), `portfolio-api` (8080) and `qdrant` (6333), with
 `./data` mounted read-only into the API container.
 
+`docker-compose.yml` itself publishes **no host ports** — it's what Coolify (or anything
+else running `docker compose -f docker-compose.yml up`) deploys as-is, and hard-binding a
+fixed host port on a shared VPS is both unnecessary (Coolify's own proxy routes by domain
+straight into the Docker network) and prone to conflicts with whatever else is already using
+that port on the box. `docker-compose.override.yml` adds the `3000`/`8080`/`6333` port
+publishing back for local dev only — plain `docker compose up` (no `-f` flag, which is what
+every command in this README uses) auto-merges it in, while an explicit `-f docker-compose.yml`
+invocation (what Coolify uses) does not. If you deploy this elsewhere without Coolify's
+domain-based proxying, you'll need to either add ports back to `docker-compose.yml` or
+configure your platform's equivalent of domain → internal-port routing.
+
 ## Configuration
 
 | Variable              | Where                 | Purpose                                  |

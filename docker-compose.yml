@@ -1,3 +1,11 @@
+# No `ports:` here on purpose - this file is what Coolify deploys as-is (it runs
+# `docker compose -f docker-compose.yml up`, an explicit -f that does NOT auto-merge
+# docker-compose.override.yml). On a shared Coolify VPS, host-binding a fixed port
+# (e.g. "8080:8080") fails outright if anything else on the box already holds it, and is
+# unnecessary anyway - Coolify's own proxy routes by domain straight into this Docker
+# network (configured per-service in Coolify's "Domains" tab), no host port needed.
+# Local dev gets its ports back via docker-compose.override.yml, which plain
+# `docker compose up` (no -f flag) merges in automatically.
 services:
   portfolio-web:
     build:
@@ -14,8 +22,6 @@ services:
       # Server Components fetch the API over the Docker network by service name,
       # since "localhost:8080" inside this container doesn't reach portfolio-api.
       API_INTERNAL_URL: http://portfolio-api:8080
-    ports:
-      - "3000:3000"
     depends_on:
       - portfolio-api
     restart: unless-stopped
@@ -23,8 +29,6 @@ services:
   portfolio-api:
     build:
       context: ./backend/Portfolio.Api
-    ports:
-      - "8080:8080"
     environment:
       XAI_API_KEY: ${XAI_API_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
@@ -38,8 +42,6 @@ services:
 
   qdrant:
     image: qdrant/qdrant:latest
-    ports:
-      - "6333:6333"
     volumes:
       - qdrant-data:/qdrant/storage
     restart: unless-stopped
