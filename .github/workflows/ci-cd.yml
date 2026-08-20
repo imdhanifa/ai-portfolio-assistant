@@ -96,15 +96,24 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Coolify deploy webhook
+      - name: Trigger Coolify deploy
         env:
           COOLIFY_WEBHOOK_URL: ${{ secrets.COOLIFY_WEBHOOK_URL }}
           COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
         run: |
+          # Coolify's API deploy endpoint (Application > ... > Webhooks, or Keys & Tokens
+          # for a manual API call): POST https://<host>/api/v1/deploy?uuid=<uuid>&force=false,
+          # with the token as a Bearer header. Verified live against this project's own
+          # Coolify instance: a GET (matching Coolify's official example GitHub Actions
+          # workflow, which is stale for this Coolify version) got a 405 telling us so in
+          # its own error body ("This endpoint has changed to a POST request"); POST
+          # returned 200 and actually queued a real deployment.
           if [ -z "$COOLIFY_WEBHOOK_URL" ]; then
             echo "COOLIFY_WEBHOOK_URL is not set - skipping deploy trigger."
             echo "Two ways to enable deployment:"
-            echo "  1) Set COOLIFY_WEBHOOK_URL (and optionally COOLIFY_API_TOKEN) in"
+            echo "  1) Set COOLIFY_WEBHOOK_URL (Coolify's API deploy URL, e.g."
+            echo "     https://<your-coolify-host>/api/v1/deploy?uuid=<resource-uuid>&force=false)"
+            echo "     and COOLIFY_API_TOKEN (from Coolify's Keys & Tokens settings) in"
             echo "     GitHub repo Settings > Secrets and variables > Actions, so deploys"
             echo "     only fire after this pipeline's checks pass."
             echo "  2) Or skip this workflow's deploy job entirely and just connect this"
@@ -112,8 +121,10 @@ jobs:
             echo "     and redeploys on every push on its own, no secret needed."
             exit 0
           fi
-          if [ -n "$COOLIFY_API_TOKEN" ]; then
-            curl -fsSL -X POST "$COOLIFY_WEBHOOK_URL" -H "Authorization: Bearer $COOLIFY_API_TOKEN"
-          else
-            curl -fsSL -X POST "$COOLIFY_WEBHOOK_URL"
+          if [ -z "$COOLIFY_API_TOKEN" ]; then
+            echo "COOLIFY_WEBHOOK_URL is set but COOLIFY_API_TOKEN is not - Coolify's"
+            echo "/api/v1/deploy endpoint requires Bearer auth, so this call would just"
+            echo "get 401'd. Set COOLIFY_API_TOKEN too."
+            exit 1
           fi
+          curl --fail-with-body --request POST "$COOLIFY_WEBHOOK_URL" --header "Authorization: Bearer $COOLIFY_API_TOKEN"
