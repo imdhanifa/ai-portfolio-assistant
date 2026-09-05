@@ -66,6 +66,18 @@ export const metadata: Metadata = {
 // color theme must match theme-provider.tsx.
 const THEME_INIT_SCRIPT = `(function(){try{var m=localStorage.getItem("theme-mode");var mode=(m==="light"||m==="dark"||m==="system")?m:"system";var resolved=mode==="system"?(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):mode;document.documentElement.classList.toggle("dark",resolved==="dark");document.documentElement.style.colorScheme=resolved;var c=localStorage.getItem("theme-color");var colors=["aurora","forest","sunset","ocean","neon","royal"];document.documentElement.setAttribute("data-color-theme",colors.indexOf(c)>-1?c:"aurora");}catch(e){}})();`;
 
+// Chrome can fire `beforeinstallprompt` as soon as it finishes its
+// installability check - which can happen before React hydrates and
+// InstallPwaButton's own useEffect gets a chance to add its listener. The
+// event fires once and isn't redispatched, so a late listener misses it
+// silently (Chrome's own omnibox install icon still appears either way,
+// since that's independent of page JS - only our custom button goes dark).
+// Capturing it here, in a `beforeInteractive` script parsed before any
+// hydration work starts, closes that race: whichever runs first, the
+// listener or the event, `window.__bipEvent` ends up set and
+// "bip-ready" tells InstallPwaButton to go read it.
+const INSTALL_PROMPT_CAPTURE_SCRIPT = `(function(){window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();window.__bipEvent=e;window.dispatchEvent(new Event("bip-ready"));});})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -78,6 +90,9 @@ export default function RootLayout({
         />
         <Script id="theme-init" strategy="beforeInteractive">
           {THEME_INIT_SCRIPT}
+        </Script>
+        <Script id="install-prompt-capture" strategy="beforeInteractive">
+          {INSTALL_PROMPT_CAPTURE_SCRIPT}
         </Script>
       </head>
       <body

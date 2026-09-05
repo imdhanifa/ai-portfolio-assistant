@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ColorThemePicker } from "@/components/color-theme-picker";
+import { InstallPwaButton } from "@/components/install-pwa-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV_LINKS = [
@@ -33,6 +34,7 @@ export function Header() {
         <div className="flex items-center gap-3">
           <ColorThemePicker />
           <ThemeToggle />
+          <InstallPwaButton />
           <a
             href="#contact"
             className="hidden sm:inline-flex items-center justify-center px-5 py-2.5 text-sm font-semibold text-black bg-gradient-to-r from-accent to-teal-400 rounded-lg shadow-lg hover:shadow-accent/20 hover:scale-105 transition-all"
