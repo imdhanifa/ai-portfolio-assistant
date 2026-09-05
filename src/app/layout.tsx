@@ -89,6 +89,16 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <ThemeProvider defaultMode="system" defaultColorTheme="aurora">
+          {/* Ambient background glow, shared across the whole site rather than
+              just the hero. `fixed inset-0` pins this to the viewport box
+              itself, so the blurred blobs (positioned with negative offsets)
+              can never widen the page's actual layout - which is what
+              previously pushed fixed elements like the chat button off-screen
+              on mobile. `overflow-hidden` clips them to that same box. */}
+          <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
+            <div className="glow-bg w-96 h-96 bg-accent top-0 -left-20" />
+            <div className="glow-bg w-96 h-96 bg-accent-2 top-1/3 -right-20" />
+          </div>
           {children}
         </ThemeProvider>
       </body>
