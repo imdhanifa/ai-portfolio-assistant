@@ -1,32 +1,42 @@
-# Environment files
-.env
-.env.local
-.env.*.local
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Node / Next.js
-frontend/portfolio-web/node_modules/
-frontend/portfolio-web/.next/
-frontend/portfolio-web/.next-profiles/
-frontend/portfolio-web/next-env.d.ts
-frontend/portfolio-web/*.tsbuildinfo
-frontend/portfolio-web/npm-debug.log*
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
-# .NET
-backend/Portfolio.Api/bin/
-backend/Portfolio.Api/obj/
-backend/**/bin/
-backend/**/obj/
-*.user
+# testing
+/coverage
 
-# Editors / OS
-.vs/
-.vscode/
-.idea/
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
 .DS_Store
-Thumbs.db
+*.pem
 
-# Claude Code local tooling state
-.claude/
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
-# Logs
-*.log
+# env files (can opt-in for committing if needed)
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts

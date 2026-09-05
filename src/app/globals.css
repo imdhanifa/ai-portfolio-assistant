@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+/* Our theme provider (src/components/theme-provider.tsx) toggles a `.dark`
+   class on <html>; tell Tailwind v4 to key its `dark:` variant off that
+   class instead of `prefers-color-scheme`. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-fira-code);
+
+  /* `inline` keeps these as var() references in the generated utilities
+     (e.g. `.text-accent { color: var(--color-accent) }`) instead of Tailwind
+     baking in a literal value at build time - that's what lets a runtime
+     attribute/class change on <html> actually repaint the page. */
+  --color-accent: var(--accent-primary);
+  --color-accent-2: var(--accent-secondary);
+
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-card-border: var(--card-border);
+}
+
+:root {
+  --bg: #f7f8fb;
+  --fg: #0f172a;
+  --muted: #475569;
+  --card-bg: rgba(255, 255, 255, 0.7);
+  --card-border: rgba(15, 23, 42, 0.08);
+  --glow-opacity: 0.18;
+
+  /* Fallback accent pair if no [data-color-theme] is present - matches the
+     "aurora" theme below. */
+  --accent-primary: #00f0ff;
+  --accent-secondary: #8b5cf6;
+}
+
+.dark {
+  --bg: #090d16;
+  --fg: #f1f5f9;
+  --muted: #94a3b8;
+  --card-bg: rgba(17, 24, 39, 0.6);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --glow-opacity: 0.35;
+}
+
+/* Color-theme skins: swap the two accent colors used throughout (buttons,
+   links, glows, badges) independent of light/dark mode. `data-color-theme`
+   is set on <html> by theme-provider.tsx and the pre-hydration script in
+   layout.tsx - this list is the single source of truth for the palette, so
+   a new theme only ever needs adding here plus one entry in THEME_OPTIONS
+   (theme-provider.tsx) and COLOR_THEMES (color-theme-picker.tsx). */
+[data-color-theme="aurora"] {
+  --accent-primary: #00f0ff;
+  --accent-secondary: #8b5cf6;
+}
+[data-color-theme="forest"] {
+  --accent-primary: #10b981;
+  --accent-secondary: #f59e0b;
+}
+[data-color-theme="sunset"] {
+  --accent-primary: #fb7185;
+  --accent-secondary: #6366f1;
+}
+[data-color-theme="ocean"] {
+  --accent-primary: #0ea5e9;
+  --accent-secondary: #f97316;
+}
+[data-color-theme="neon"] {
+  --accent-primary: #d946ef;
+  --accent-secondary: #a3e635;
+}
+[data-color-theme="royal"] {
+  --accent-primary: #facc15;
+  --accent-secondary: #7c3aed;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+/* Glassmorphism card, same recipe as the original static design, now theme-aware */
+.glass-card {
+  background: var(--card-bg);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.glass-card:hover {
+  border-color: color-mix(in srgb, var(--accent-primary) 40%, transparent);
+  box-shadow: 0 10px 30px -10px color-mix(in srgb, var(--accent-primary) 15%, transparent);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.glow-bg {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  z-index: -1;
+  opacity: var(--glow-opacity);
+  pointer-events: none;
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.5;
+  }
+}
+.pulse-dot {
+  animation: pulseGlow 2s infinite ease-in-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease both;
+}

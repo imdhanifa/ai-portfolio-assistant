@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Portfolio (Next.js)
 
-## Getting Started
+A Next.js 16 (App Router, TypeScript, Tailwind CSS v4) rebuild of the portfolio site, with a light/dark theme
+toggle and content fetched dynamically from **Portfolio.Api** (described by `v1.json`).
 
-First, run the development server:
+## Getting started
 
 ```bash
+npm install
+cp .env.example .env.local   # then edit NEXT_PUBLIC_API_URL if needed
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Connecting to Portfolio.Api
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Set `NEXT_PUBLIC_API_URL` in `.env.local` to the API's base URL — it defaults to
+`https://localhost:7103`, matching the `servers` entry in `v1.json`. The home page
+(`src/app/page.tsx`) calls these endpoints on every request:
 
-## Learn More
+| Endpoint            | Used for                        |
+| -------------------- | -------------------------------- |
+| `GET /api/profile`   | Hero section, footer contact info |
+| `GET /api/skills`    | "Core Expertise" cards, grouped by each skill's `category` |
+| `GET /api/projects`  | "Featured Projects" grid |
+| `GET /api/experience`| Work experience timeline |
+| `GET /api/education` | Education timeline |
+| `GET /api/resume/pdf`| "Download Resume" link |
+| `POST /api/Chat`     | Floating chat widget (bottom-right) |
 
-To learn more about Next.js, take a look at the following resources:
+If a request fails (API not running, network error, non-2xx response) the affected section falls
+back to local placeholder content in [`src/lib/fallback-data.ts`](src/lib/fallback-data.ts) instead
+of breaking the page — useful for working on the UI without the backend running.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+> **Dev-cert note:** `https://localhost:7103` typically uses ASP.NET Core's self-signed dev
+> certificate. Node's `fetch` will reject it unless you trust that cert locally (`dotnet dev-certs
+> https --trust`) or point `NEXT_PUBLIC_API_URL` at an HTTP/trusted origin instead.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Data shapes
 
-## Deploy on Vercel
+`v1.json` only documents `200 OK` for the profile/skills/projects/experience/education endpoints
+(no response schema), so [`src/types/api.ts`](src/types/api.ts) defines the shape this frontend
+expects. Every field it renders is optional, so the UI degrades gracefully as the real API's
+response shape evolves — update the types there to match once the backend's schemas are finalized.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Theme
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Light/dark mode is handled by [`next-themes`](https://github.com/pacocoursey/next-themes)
+(`src/components/theme-provider.tsx`), toggled from the header (`src/components/theme-toggle.tsx`).
+It defaults to dark and respects the visitor's OS preference. Tailwind v4's `dark:` variant is
+re-pointed at the `.dark` class in `src/app/globals.css` (`@custom-variant dark`) so the toggle
+works independent of `prefers-color-scheme`.
+
+## Project structure
+
+```
+src/
+  app/            # Route (page, layout, global styles)
+  components/     # Header, Hero, Skills/Projects/Experience sections, Footer, ChatWidget, theme
+  lib/            # api.ts (server-side fetchers), chat-client.ts (client fetch for /api/Chat)
+  types/          # TypeScript types for the API's request/response shapes
+```
+
+## Scripts
+
+- `npm run dev` — start the dev server
+- `npm run build` — production build
+- `npm run start` — run the production build
+- `npm run lint` — ESLint
