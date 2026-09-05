@@ -4,7 +4,10 @@ export function Hero({ profile }: { profile: Profile }) {
   const stats = profile.stats ?? [];
 
   return (
-    <section id="about" className="max-w-7xl mx-auto px-6 pt-16 pb-24 grid lg:grid-cols-12 gap-12 items-center">
+    <section
+      id="about"
+      className="relative overflow-hidden max-w-7xl mx-auto px-6 pt-16 pb-24 grid lg:grid-cols-12 gap-12 items-center"
+    >
       <div className="glow-bg w-96 h-96 bg-accent top-0 -left-20" />
       <div className="glow-bg w-96 h-96 bg-accent-2 top-1/3 -right-20" />
 
