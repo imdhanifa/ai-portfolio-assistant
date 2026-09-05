@@ -19,7 +19,7 @@ export function Header() {
     <header className="sticky top-0 z-50 backdrop-blur-md bg-bg/80 border-b border-card-border">
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         <a href="#" className="text-2xl font-extrabold tracking-wider">
-          MH<span className="text-accent">.info</span>
+          Hanifa<span className="text-accent">.info</span>
         </a>
 
         <nav className="hidden md:flex space-x-8 text-sm font-medium text-muted">
